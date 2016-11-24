@@ -1902,3 +1902,14 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
     display: none;
   }
 }
+
+/* ADDITIONAL CONFIGURATION */
+#openFile,
+#secondaryOpenFile,
+#documentProperties,
+#viewBookmark,
+#viewAttachments,
+#download,
+#secondaryDownload {
+  display: none !important;
+}
