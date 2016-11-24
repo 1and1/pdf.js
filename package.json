@@ -1,6 +1,6 @@
 {
-  "name": "pdf.js",
-  "version": "0.8.0",
+  "name": "1and1-pdfjs",
+  "version": "0.0.1",
   "devDependencies": {
     "escodegen": "^1.8.0",
     "esprima": "^2.7.2",
