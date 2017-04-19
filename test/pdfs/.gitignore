@@ -21,6 +21,8 @@
 !issue5874.pdf
 !issue5808.pdf
 !issue6204.pdf
+!issue6342.pdf
+!issue6652.pdf
 !issue6782.pdf
 !issue6901.pdf
 !issue6961.pdf
@@ -38,9 +40,16 @@
 !issue7446.pdf
 !issue7492.pdf
 !issue7544.pdf
+!issue7580.pdf
 !issue7598.pdf
 !issue7665.pdf
 !issue7835.pdf
+!issue7855.pdf
+!issue7872.pdf
+!issue7901.pdf
+!issue8061.pdf
+!issue8088.pdf
+!issue8125.pdf
 !bad-PageLabels.pdf
 !filled-background.pdf
 !ArabicCIDTrueType.pdf
@@ -57,6 +66,7 @@
 !bug1146106.pdf
 !bug1252420.pdf
 !bug1308536.pdf
+!bug1337429.pdf
 !issue5564_reduced.pdf
 !canvas.pdf
 !bug1132849.pdf
@@ -71,6 +81,7 @@
 !sizes.pdf
 !javauninstall-7r.pdf
 !multiple-filters-length-zero.pdf
+!non-embedded-NuptialScript.pdf
 !issue3205r.pdf
 !issue3207r.pdf
 !issue3263r.pdf
@@ -259,8 +270,13 @@
 !annotation-strikeout.pdf
 !annotation-squiggly.pdf
 !annotation-highlight.pdf
+!annotation-line.pdf
 !annotation-fileattachment.pdf
 !annotation-text-widget.pdf
 !annotation-choice-widget.pdf
+!annotation-button-widget.pdf
 !zero_descent.pdf
 !operator-in-TJ-array.pdf
+!issue7878.pdf
+!font_ascent_descent.pdf
+!issue8097_reduced.pdf

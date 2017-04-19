@@ -13,24 +13,31 @@
  * limitations under the License.
  */
 
-'use strict';
+"use strict";
 
-var DEFAULT_PREFERENCES;
+this.EXPORTED_SYMBOLS = ["PdfJsTelemetry"];
 
-(function defaultPreferencesLoaderWrapper() {
-  function loaded() {
-    try {
-      DEFAULT_PREFERENCES = JSON.parse(xhr.responseText);
-    } catch (e) {
-      console.error('Unable to load DEFAULT_PREFERENCES: ' + e);
-      DEFAULT_PREFERENCES = {};
-    }
-    var event = document.createEvent('CustomEvent');
-    event.initCustomEvent('defaultpreferencesloaded', true, true, null);
-    document.dispatchEvent(event);
+this.PdfJsTelemetry = {
+  onViewerIsUsed() {
+  },
+  onFallback() {
+  },
+  onDocumentSize(size) {
+  },
+  onDocumentVersion(versionId) {
+  },
+  onDocumentGenerator(generatorId) {
+  },
+  onEmbed(isObject) {
+  },
+  onFontType(fontTypeId) {
+  },
+  onForm(isAcroform) {
+  },
+  onPrint() {
+  },
+  onStreamType(streamTypeId) {
+  },
+  onTimeToView(ms) {
   }
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'default_preferences.json');
-  xhr.onload = xhr.onerror = loaded;
-  xhr.send();
-})();
+};

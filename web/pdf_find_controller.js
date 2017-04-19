@@ -13,20 +13,7 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs-web/pdf_find_controller', ['exports', 'pdfjs-web/ui_utils'],
-      factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('./ui_utils.js'));
-  } else {
-    factory((root.pdfjsWebPDFFindController = {}), root.pdfjsWebUIUtils);
-  }
-}(this, function (exports, uiUtils) {
-
-var scrollIntoView = uiUtils.scrollIntoView;
+import { scrollIntoView } from './ui_utils';
 
 var FindStates = {
   FIND_FOUND: 0,
@@ -94,9 +81,9 @@ var PDFFindController = (function PDFFindControllerClosure() {
       this.dirtyMatch = false;
       this.findTimeout = null;
 
-      this.firstPagePromise = new Promise(function (resolve) {
+      this._firstPagePromise = new Promise((resolve) => {
         this.resolveFirstPage = resolve;
-      }.bind(this));
+      });
     },
 
     normalize: function PDFFindController_normalize(text) {
@@ -290,7 +277,7 @@ var PDFFindController = (function PDFFindControllerClosure() {
       this.state = state;
       this.updateUIState(FindStates.FIND_PENDING);
 
-      this.firstPagePromise.then(function() {
+      this._firstPagePromise.then(function() {
         this.extractText();
 
         clearTimeout(this.findTimeout);
@@ -399,22 +386,21 @@ var PDFFindController = (function PDFFindControllerClosure() {
         offset.matchIdx = (previous ? numMatches - 1 : 0);
         this.updateMatch(true);
         return true;
-      } else {
-        // No matches, so attempt to search the next page.
-        this.advanceOffsetPage(previous);
-        if (offset.wrapped) {
-          offset.matchIdx = null;
-          if (this.pagesToSearch < 0) {
-            // No point in wrapping again, there were no matches.
-            this.updateMatch(false);
-            // while matches were not found, searching for a page
-            // with matches should nevertheless halt.
-            return true;
-          }
-        }
-        // Matches were not found (and searching is not done).
-        return false;
       }
+      // No matches, so attempt to search the next page.
+      this.advanceOffsetPage(previous);
+      if (offset.wrapped) {
+        offset.matchIdx = null;
+        if (this.pagesToSearch < 0) {
+          // No point in wrapping again, there were no matches.
+          this.updateMatch(false);
+          // while matches were not found, searching for a page
+          // with matches should nevertheless halt.
+          return true;
+        }
+      }
+      // Matches were not found (and searching is not done).
+      return false;
     },
 
     /**
@@ -506,6 +492,7 @@ var PDFFindController = (function PDFFindControllerClosure() {
   return PDFFindController;
 })();
 
-exports.FindStates = FindStates;
-exports.PDFFindController = PDFFindController;
-}));
+export {
+  FindStates,
+  PDFFindController,
+};

@@ -1,8 +1,6 @@
-/* jshint node:true */
-
 'use strict';
 
-var esprima = require('esprima');
+var acorn = require('acorn');
 var escodegen = require('escodegen');
 var vm = require('vm');
 var fs = require('fs');
@@ -51,7 +49,7 @@ function handlePreprocessorAction(ctx, actionName, args, loc) {
           return {type: 'Literal', value: result, loc: loc};
         }
         if (typeof result === 'object') {
-          var parsedObj = esprima.parse('(' + JSON.stringify(result) + ')');
+          var parsedObj = acorn.parse('(' + JSON.stringify(result) + ')');
           parsedObj.body[0].expression.loc = loc;
           return parsedObj.body[0].expression;
         }
@@ -68,7 +66,7 @@ function handlePreprocessorAction(ctx, actionName, args, loc) {
                                jsonPath.substring(ROOT_PREFIX.length));
         }
         var jsonContent = fs.readFileSync(jsonPath).toString();
-        var parsedJSON = esprima.parse('(' +jsonContent + ')');
+        var parsedJSON = acorn.parse('(' + jsonContent + ')');
         parsedJSON.body[0].expression.loc = loc;
         return parsedJSON.body[0].expression;
     }
@@ -171,21 +169,117 @@ function postprocessNode(ctx, node) {
     case 'BlockStatement':
       var subExpressionIndex = 0;
       while (subExpressionIndex < node.body.length) {
-        if (node.body[subExpressionIndex].type === 'EmptyStatement') {
-          // Removing empty statements from the blocks.
-          node.body.splice(subExpressionIndex, 1);
-          continue;
-        }
-        if (node.body[subExpressionIndex].type === 'BlockStatement') {
-          // Block statements inside a block are moved to the parent one.
-          var subChildren = node.body[subExpressionIndex].body;
-          Array.prototype.splice.apply(node.body,
-            [subExpressionIndex, 1].concat(subChildren));
-          subExpressionIndex += subChildren.length;
-          continue;
+        switch (node.body[subExpressionIndex].type) {
+          case 'EmptyStatement':
+            // Removing empty statements from the blocks.
+            node.body.splice(subExpressionIndex, 1);
+            continue;
+          case 'BlockStatement':
+            // Block statements inside a block are moved to the parent one.
+            var subChildren = node.body[subExpressionIndex].body;
+            Array.prototype.splice.apply(node.body,
+              [subExpressionIndex, 1].concat(subChildren));
+            subExpressionIndex += Math.max(subChildren.length - 1, 0);
+            continue;
+          case 'ReturnStatement':
+          case 'ThrowStatement':
+            // Removing dead code after return or throw.
+            node.body.splice(subExpressionIndex + 1,
+                             node.body.length - subExpressionIndex - 1);
+            break;
         }
         subExpressionIndex++;
       }
+      break;
+    case 'FunctionDeclaration':
+    case 'FunctionExpression':
+      var block = node.body;
+      if (block.body.length > 0 &&
+          block.body[block.body.length - 1].type === 'ReturnStatement' &&
+          !block.body[block.body.length - 1].argument) {
+        // Function body ends with return without arg -- removing it.
+        block.body.pop();
+      }
+      break;
+    case 'Program':
+      // Checking for a function closure that looks like UMD header.
+      node.body.some(function (item, index) {
+        // Is it `(function (root, factory) { ? }(this, function (?) {?}));` ?
+        if (item.type !== 'ExpressionStatement' ||
+            item.expression.type !== 'CallExpression' ||
+            item.expression.callee.type !== 'FunctionExpression' ||
+            item.expression.callee.params.length !== 2 ||
+            item.expression.arguments.length !== 2 ||
+            item.expression.arguments[0].type !== 'ThisExpression' ||
+            item.expression.arguments[1].type !== 'FunctionExpression') {
+          return false;
+        }
+        var init = item.expression.callee;
+        // Is init body looks like
+        // `if (?) { ? } else if (typeof exports !== 'undefined') { ? } ...`?
+        if (init.body.type !== 'BlockStatement' ||
+            init.body.body.length !== 1 ||
+            init.body.body[0].type !== 'IfStatement') {
+          return false;
+        }
+        var initIf = init.body.body[0];
+        if (initIf.alternate.type !== 'IfStatement' ||
+            initIf.alternate.test.type !== 'BinaryExpression' ||
+            initIf.alternate.test.operator !== '!==' ||
+            initIf.alternate.test.left.type !== 'UnaryExpression' ||
+            initIf.alternate.test.left.operator !== 'typeof' ||
+            initIf.alternate.test.left.argument.type !== 'Identifier' ||
+            initIf.alternate.test.left.argument.name !== 'exports' ||
+            initIf.alternate.test.right.type !== 'Literal' ||
+            initIf.alternate.test.right.value !== 'undefined' ||
+            initIf.alternate.consequent.type !== 'BlockStatement') {
+          return false;
+        }
+        var commonJsInit = initIf.alternate.consequent;
+        // Is commonJsInit `factory(exports, ...)` ?
+        if (commonJsInit.body.length !== 1 ||
+            commonJsInit.body[0].type !== 'ExpressionStatement' ||
+            commonJsInit.body[0].expression.type !== 'CallExpression' ||
+            commonJsInit.body[0].expression.callee.type !== 'Identifier') {
+          return false;
+        }
+        var commonJsInitArgs = commonJsInit.body[0].expression.arguments;
+        if (commonJsInitArgs.length === 0 ||
+            commonJsInitArgs[0].type !== 'Identifier' ||
+            commonJsInitArgs[0].name !== 'exports') {
+          return false;
+        }
+        var factory = item.expression.arguments[1];
+        // Is factory `function (exports, ....) { ? }` ?
+        if (factory.params.length === 0 ||
+            factory.params[0].type !== 'Identifier' ||
+            factory.params[0].name !== 'exports' ||
+            factory.body.type !== 'BlockStatement') {
+          return true;
+        }
+        var factoryParams = factory.params;
+        var factoryBody = factory.body;
+
+        // Remove closure and function and replacing parameters with vars.
+        node.body.splice(index, 1);
+        for (var i = 1, ii = factoryParams.length; i < ii; i++) {
+          var varNode = {
+            type: 'VariableDeclaration',
+            'declarations': [{
+                type: 'VariableDeclarator',
+                id: factoryParams[i],
+                init: commonJsInitArgs[i] || null,
+                loc: factoryParams[i].loc
+            }],
+            kind: 'var'
+          };
+          node.body.splice(index++, 0, varNode);
+        }
+        factoryBody.body.forEach(function (item) {
+          node.body.splice(index++, 0, item);
+        });
+        return true;
+      });
       break;
   }
   return node;
@@ -197,8 +291,12 @@ function fixComments(ctx, node) {
   }
   // Fixes double comments in the escodegen output.
   delete node.trailingComments;
-  // Removes jshint and other service comments.
+  // Removes ESLint and other service comments.
   if (node.leadingComments) {
+    var CopyrightRegExp = /\bcopyright\b/i;
+    var BlockCommentRegExp = /^\s*(globals|eslint|falls through)\b/;
+    var LineCommentRegExp = /^\s*eslint\b/;
+
     var i = 0;
     while (i < node.leadingComments.length) {
       var type = node.leadingComments[i].type;
@@ -206,12 +304,12 @@ function fixComments(ctx, node) {
 
       if (ctx.saveComments === 'copyright') {
         // Remove all comments, except Copyright notices and License headers.
-        if (!(type === 'Block' && /\bcopyright\b/i.test(value))) {
+        if (!(type === 'Block' && CopyrightRegExp.test(value))) {
           node.leadingComments.splice(i, 1);
           continue;
         }
-      } else if (type === 'Block' &&
-                 /^\s*(globals|jshint|falls through|umdutils)\b/.test(value)) {
+      } else if ((type === 'Block' && BlockCommentRegExp.test(value)) ||
+                 (type === 'Line' && LineCommentRegExp.test(value))) {
         node.leadingComments.splice(i, 1);
         continue;
       }
@@ -256,16 +354,21 @@ function preprocessPDFJSCode(ctx, code) {
       adjustMultilineComment: saveComments,
     }
   };
+  var comments;
   var parseComment = {
-    loc: true,
-    attachComment: saveComments
+    locations: true,
+    onComments: saveComments || (comments = []),
+    sourceType: 'module',
   };
   var codegenOptions = {
     format: format,
     comment: saveComments,
-    parse: esprima.parse
+    parse: acorn.parse,
   };
-  var syntax = esprima.parse(code, parseComment);
+  var syntax = acorn.parse(code, parseComment);
+  if (saveComments) {
+    escodegen.attachComments(syntax, comments);
+  }
   traverseTree(ctx, syntax);
   return escodegen.generate(syntax, codegenOptions);
 }

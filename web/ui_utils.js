@@ -13,17 +13,7 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs-web/ui_utils', ['exports', 'pdfjs-web/pdfjs'], factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('./pdfjs.js'));
-  } else {
-    factory((root.pdfjsWebUIUtils = {}), root.pdfjsWebPDFJS);
-  }
-}(this, function (exports, pdfjsLib) {
+import { PDFJS } from './pdfjs';
 
 var CSS_UNITS = 96.0 / 72.0;
 var DEFAULT_SCALE_VALUE = 'auto';
@@ -41,8 +31,6 @@ var RendererType = {
 };
 
 var mozL10n = document.mozL10n || document.webL10n;
-
-var PDFJS = pdfjsLib.PDFJS;
 
 /**
  * Disables fullscreen support, and by extension Presentation Mode,
@@ -94,7 +82,7 @@ if (typeof PDFJSDev === 'undefined' ||
    * @var {string}
    */
   PDFJS.locale = (PDFJS.locale === undefined ? navigator.language :
-    PDFJS.locale);
+                  PDFJS.locale);
 }
 
 /**
@@ -260,7 +248,7 @@ function approximateFraction(x) {
   var limit = 8;
   if (xinv > limit) {
     return [1, limit];
-  } else  if (Math.floor(xinv) === xinv) {
+  } else if (Math.floor(xinv) === xinv) {
     return [1, xinv];
   }
 
@@ -280,12 +268,14 @@ function approximateFraction(x) {
       a = p; b = q;
     }
   }
+  var result;
   // Select closest of the neighbours to x.
   if (x_ - a / b < c / d - x_) {
-    return x_ === x ? [a, b] : [b, a];
+    result = x_ === x ? [a, b] : [b, a];
   } else {
-    return x_ === x ? [c, d] : [d, c];
+    result = x_ === x ? [c, d] : [d, c];
   }
+  return result;
 }
 
 function roundToDivide(x, div) {
@@ -366,11 +356,15 @@ function noContextMenuHandler(e) {
 /**
  * Returns the filename or guessed filename from the url (see issue 3455).
  * url {String} The original PDF location.
+ * defaultFilename {string} The value to return if the file name is unknown.
  * @return {String} Guessed PDF file name.
  */
-function getPDFFileNameFromURL(url) {
-  var reURI = /^(?:([^:]+:)?\/\/[^\/]+)?([^?#]*)(\?[^#]*)?(#.*)?$/;
-  //            SCHEME      HOST         1.PATH  2.QUERY   3.REF
+function getPDFFileNameFromURL(url, defaultFilename) {
+  if (typeof defaultFilename === 'undefined') {
+    defaultFilename = 'document.pdf';
+  }
+  var reURI = /^(?:(?:[^:]+:)?\/\/[^\/]+)?([^?#]*)(\?[^#]*)?(#.*)?$/;
+  //            SCHEME        HOST         1.PATH  2.QUERY   3.REF
   // Pattern to get last matching NAME.pdf
   var reFilename = /[^\/?#=]+\.pdf\b(?!.*\.pdf\b)/i;
   var splitURI = reURI.exec(url);
@@ -384,13 +378,13 @@ function getPDFFileNameFromURL(url) {
       try {
         suggestedFilename =
           reFilename.exec(decodeURIComponent(suggestedFilename))[0];
-      } catch(e) { // Possible (extremely rare) errors:
+      } catch (e) { // Possible (extremely rare) errors:
         // URIError "Malformed URI", e.g. for "%AA.pdf"
         // TypeError "null has no properties", e.g. for "%2F.pdf"
       }
     }
   }
-  return suggestedFilename || 'document.pdf';
+  return suggestedFilename || defaultFilename;
 }
 
 function normalizeWheelEventDelta(evt) {
@@ -427,7 +421,8 @@ var animationStarted = new Promise(function (resolve) {
  */
 var localized = new Promise(function (resolve, reject) {
   if (!mozL10n) {
-    reject(new Error('mozL10n service is not available.'));
+    // Resolve as localized even if mozL10n is not available.
+    resolve();
     return;
   }
   if (mozL10n.getReadyState() !== 'loading') {
@@ -564,30 +559,31 @@ var ProgressBar = (function ProgressBarClosure() {
   return ProgressBar;
 })();
 
-exports.CSS_UNITS = CSS_UNITS;
-exports.DEFAULT_SCALE_VALUE = DEFAULT_SCALE_VALUE;
-exports.DEFAULT_SCALE = DEFAULT_SCALE;
-exports.MIN_SCALE = MIN_SCALE;
-exports.MAX_SCALE = MAX_SCALE;
-exports.UNKNOWN_SCALE = UNKNOWN_SCALE;
-exports.MAX_AUTO_SCALE = MAX_AUTO_SCALE;
-exports.SCROLLBAR_PADDING = SCROLLBAR_PADDING;
-exports.VERTICAL_PADDING = VERTICAL_PADDING;
-exports.RendererType = RendererType;
-exports.mozL10n = mozL10n;
-exports.EventBus = EventBus;
-exports.ProgressBar = ProgressBar;
-exports.getPDFFileNameFromURL = getPDFFileNameFromURL;
-exports.noContextMenuHandler = noContextMenuHandler;
-exports.parseQueryString = parseQueryString;
-exports.getVisibleElements = getVisibleElements;
-exports.roundToDivide = roundToDivide;
-exports.approximateFraction = approximateFraction;
-exports.getOutputScale = getOutputScale;
-exports.scrollIntoView = scrollIntoView;
-exports.watchScroll = watchScroll;
-exports.binarySearchFirstItem = binarySearchFirstItem;
-exports.normalizeWheelEventDelta = normalizeWheelEventDelta;
-exports.animationStarted = animationStarted;
-exports.localized = localized;
-}));
+export {
+  CSS_UNITS,
+  DEFAULT_SCALE_VALUE,
+  DEFAULT_SCALE,
+  MIN_SCALE,
+  MAX_SCALE,
+  UNKNOWN_SCALE,
+  MAX_AUTO_SCALE,
+  SCROLLBAR_PADDING,
+  VERTICAL_PADDING,
+  RendererType,
+  mozL10n,
+  EventBus,
+  ProgressBar,
+  getPDFFileNameFromURL,
+  noContextMenuHandler,
+  parseQueryString,
+  getVisibleElements,
+  roundToDivide,
+  approximateFraction,
+  getOutputScale,
+  scrollIntoView,
+  watchScroll,
+  binarySearchFirstItem,
+  normalizeWheelEventDelta,
+  animationStarted,
+  localized,
+};

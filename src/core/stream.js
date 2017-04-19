@@ -38,7 +38,6 @@ var isInt = sharedUtil.isInt;
 var isArray = sharedUtil.isArray;
 var createObjectURL = sharedUtil.createObjectURL;
 var shadow = sharedUtil.shadow;
-var warn = sharedUtil.warn;
 var isSpace = sharedUtil.isSpace;
 var Dict = corePrimitives.Dict;
 var isDict = corePrimitives.isDict;
@@ -129,7 +128,6 @@ var Stream = (function StreamClosure() {
     makeSubStream: function Stream_makeSubStream(start, length, dict) {
       return new Stream(this.bytes.buffer, start, length, dict);
     },
-    isStream: true
   };
 
   return Stream;
@@ -739,15 +737,16 @@ var PredictorStream = (function PredictorStreamClosure() {
     var pos = bufferLength;
     var i;
 
-    if (bits === 1) {
+    if (bits === 1 && colors === 1) {
+      // Optimized version of the loop in the "else"-branch
+      // for 1 bit-per-component and 1 color TIFF images.
       for (i = 0; i < rowBytes; ++i) {
-        var c = rawBytes[i];
-        inbuf = (inbuf << 8) | c;
-        // bitwise addition is exclusive or
-        // first shift inbuf and then add
-        buffer[pos++] = (c ^ (inbuf >> colors)) & 0xFF;
-        // truncate inbuf (assumes colors < 16)
-        inbuf &= 0xFFFF;
+        var c = rawBytes[i] ^ inbuf;
+        c ^= c >> 1;
+        c ^= c >> 2;
+        c ^= c >> 4;
+        inbuf = (c & 1) << 7;
+        buffer[pos++] = c;
       }
     } else if (bits === 8) {
       for (i = 0; i < colors; ++i) {

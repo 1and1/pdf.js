@@ -13,25 +13,8 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs/display/pattern_helper', ['exports', 'pdfjs/shared/util',
-      'pdfjs/display/webgl'], factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('../shared/util.js'), require('./webgl.js'));
-  } else {
-    factory((root.pdfjsDisplayPatternHelper = {}), root.pdfjsSharedUtil,
-      root.pdfjsDisplayWebGL);
-  }
-}(this, function (exports, sharedUtil, displayWebGL) {
-
-var Util = sharedUtil.Util;
-var info = sharedUtil.info;
-var isArray = sharedUtil.isArray;
-var error = sharedUtil.error;
-var WebGLUtils = displayWebGL.WebGLUtils;
+import { error, info, isArray, Util } from '../shared/util';
+import { WebGLUtils } from './webgl';
 
 var ShadingIRs = {};
 
@@ -239,13 +222,13 @@ var createMeshCanvas = (function createMeshCanvasClosure() {
 
 ShadingIRs.Mesh = {
   fromIR: function Mesh_fromIR(raw) {
-    //var type = raw[1];
+    // var type = raw[1];
     var coords = raw[2];
     var colors = raw[3];
     var figures = raw[4];
     var bounds = raw[5];
     var matrix = raw[6];
-    //var bbox = raw[7];
+    // var bbox = raw[7];
     var background = raw[8];
     return {
       type: 'Pattern',
@@ -318,7 +301,7 @@ var TilingPattern = (function TilingPatternClosure() {
   function TilingPattern(IR, color, ctx, canvasGraphicsFactory, baseTransform) {
     this.operatorList = IR[2];
     this.matrix = IR[3] || [1, 0, 0, 1, 0, 0];
-    this.bbox = IR[4];
+    this.bbox = Util.normalizeRect(IR[4]);
     this.xstep = IR[5];
     this.ystep = IR[6];
     this.paintType = IR[7];
@@ -406,7 +389,7 @@ var TilingPattern = (function TilingPatternClosure() {
     },
 
     clipBbox: function clipBbox(graphics, bbox, x0, y0, x1, y1) {
-      if (bbox && isArray(bbox) && bbox.length === 4) {
+      if (isArray(bbox) && bbox.length === 4) {
         var bboxWidth = x1 - x0;
         var bboxHeight = y1 - y0;
         graphics.ctx.rect(x0, y0, bboxWidth, bboxHeight);
@@ -448,6 +431,7 @@ var TilingPattern = (function TilingPatternClosure() {
   return TilingPattern;
 })();
 
-exports.getShadingPatternFromIR = getShadingPatternFromIR;
-exports.TilingPattern = TilingPattern;
-}));
+export {
+  getShadingPatternFromIR,
+  TilingPattern,
+};

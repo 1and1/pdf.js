@@ -13,22 +13,9 @@
  * limitations under the License.
  */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs-web/hand_tool', ['exports', 'pdfjs-web/grab_to_pan',
-      'pdfjs-web/preferences'], factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('./grab_to_pan.js'), require('./preferences.js'));
-  } else {
-    factory((root.pdfjsWebHandTool = {}), root.pdfjsWebGrabToPan,
-      root.pdfjsWebPreferences);
-  }
-}(this, function (exports, grabToPan, preferences) {
-
-var GrabToPan = grabToPan.GrabToPan;
-var Preferences = preferences.Preferences;
+import { GrabToPan } from './grab_to_pan';
+import { localized } from './ui_utils';
+import { Preferences } from './preferences';
 
 /**
  * @typedef {Object} HandToolOptions
@@ -59,13 +46,12 @@ var HandTool = (function HandToolClosure() {
 
     this.eventBus.on('togglehandtool', this.toggle.bind(this));
 
-    this.eventBus.on('localized', function (e) {
-      Preferences.get('enableHandToolOnLoad').then(function resolved(value) {
-        if (value) {
+    Promise.all([localized, Preferences.get('enableHandToolOnLoad')]).then(
+      function resolved(values) {
+        if (values[1] === true) {
           this.handTool.activate();
         }
-      }.bind(this), function rejected(reason) {});
-    }.bind(this));
+      }.bind(this)).catch(function rejected(reason) { });
 
     this.eventBus.on('presentationmodechanged', function (e) {
       if (e.switchInProgress) {
@@ -109,5 +95,6 @@ var HandTool = (function HandToolClosure() {
   return HandTool;
 })();
 
-exports.HandTool = HandTool;
-}));
+export {
+  HandTool,
+};

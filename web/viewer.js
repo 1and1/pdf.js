@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*globals require, chrome */
+/* globals chrome */
 
 'use strict';
 
@@ -35,26 +35,31 @@ if (typeof PDFJSDev !== 'undefined' && PDFJSDev.test('CHROME')) {
   })();
 }
 
-var pdfjsWebLibs;
+var pdfjsWebApp;
 if (typeof PDFJSDev !== 'undefined' && PDFJSDev.test('PRODUCTION')) {
-  pdfjsWebLibs = {
-    pdfjsWebPDFJS: window.pdfjsDistBuildPdf
-  };
-  (function () {
-//#expand __BUNDLE__
-  }).call(pdfjsWebLibs);
+  pdfjsWebApp = require('./app.js');
 }
 
 if (typeof PDFJSDev !== 'undefined' && PDFJSDev.test('FIREFOX || MOZCENTRAL')) {
   // FIXME the l10n.js file in the Firefox extension needs global FirefoxCom.
-  window.FirefoxCom = pdfjsWebLibs.pdfjsWebFirefoxCom.FirefoxCom;
+  window.FirefoxCom = require('./firefoxcom.js').FirefoxCom;
+  require('./firefox_print_service.js');
+}
+if (typeof PDFJSDev !== 'undefined' && PDFJSDev.test('GENERIC')) {
+  require('./genericcom.js');
+}
+if (typeof PDFJSDev !== 'undefined' && PDFJSDev.test('CHROME')) {
+  require('./chromecom.js');
+}
+if (typeof PDFJSDev !== 'undefined' && PDFJSDev.test('CHROME || GENERIC')) {
+  require('./pdf_print_service.js');
 }
 
 function getViewerConfiguration() {
   return {
     appContainer: document.body,
     mainContainer: document.getElementById('viewerContainer'),
-    viewerContainer:  document.getElementById('viewer'),
+    viewerContainer: document.getElementById('viewer'),
     eventBus: null, // using global event bus with DOM events
     toolbar: {
       container: document.getElementById('toolbarViewer'),
@@ -162,27 +167,31 @@ function getViewerConfiguration() {
     printContainer: document.getElementById('printContainer'),
     openFileInputName: 'fileInput',
     debuggerScriptPath: './debugger.js',
+    defaultUrl: DEFAULT_URL
   };
 }
 
 function webViewerLoad() {
   var config = getViewerConfiguration();
   if (typeof PDFJSDev === 'undefined' || !PDFJSDev.test('PRODUCTION')) {
-    require.config({paths: {'pdfjs': '../src', 'pdfjs-web': '.'}});
-    require(['pdfjs-web/pdfjs'], function () {
-      // Ensure that src/main_loader.js has loaded all the necessary
-      // dependencies *before* the viewer loads, to prevent issues in browsers
-      // relying on e.g. the Promise/URL polyfill in src/shared/util.js (fixes
-      // issue 7448).
-      require(['pdfjs-web/app', 'pdfjs-web/pdf_print_service'], function (web) {
-        window.PDFViewerApplication = web.PDFViewerApplication;
-        web.PDFViewerApplication.run(config);
-      });
+    Promise.all([
+      SystemJS.import('pdfjs-web/app'),
+      SystemJS.import('pdfjs-web/genericcom'),
+      SystemJS.import('pdfjs-web/pdf_print_service'),
+    ]).then(function (modules) {
+      var app = modules[0];
+      window.PDFViewerApplication = app.PDFViewerApplication;
+      app.PDFViewerApplication.run(config);
     });
   } else {
-    window.PDFViewerApplication = pdfjsWebLibs.pdfjsWebApp.PDFViewerApplication;
-    pdfjsWebLibs.pdfjsWebApp.PDFViewerApplication.run(config);
+    window.PDFViewerApplication = pdfjsWebApp.PDFViewerApplication;
+    pdfjsWebApp.PDFViewerApplication.run(config);
   }
 }
 
-document.addEventListener('DOMContentLoaded', webViewerLoad, true);
+if (document.readyState === 'interactive' ||
+    document.readyState === 'complete') {
+  webViewerLoad();
+} else {
+  document.addEventListener('DOMContentLoaded', webViewerLoad, true);
+}

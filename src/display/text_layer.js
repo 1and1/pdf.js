@@ -12,26 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals WeakMap */
 
-'use strict';
-
-(function (root, factory) {
-  if (typeof define === 'function' && define.amd) {
-    define('pdfjs/display/text_layer', ['exports', 'pdfjs/shared/util',
-      'pdfjs/display/dom_utils'], factory);
-  } else if (typeof exports !== 'undefined') {
-    factory(exports, require('../shared/util.js'), require('./dom_utils.js'));
-  } else {
-    factory((root.pdfjsDisplayTextLayer = {}), root.pdfjsSharedUtil,
-      root.pdfjsDisplayDOMUtils);
-  }
-}(this, function (exports, sharedUtil, displayDOMUtils) {
-
-var Util = sharedUtil.Util;
-var createPromiseCapability = sharedUtil.createPromiseCapability;
-var CustomStyle = displayDOMUtils.CustomStyle;
-var getDefaultSetting = displayDOMUtils.getDefaultSetting;
+import { createPromiseCapability, Util } from '../shared/util';
+import { CustomStyle, getDefaultSetting } from './dom_utils';
 
 /**
  * Text layer render parameters.
@@ -187,6 +170,7 @@ var renderTextLayer = (function renderTextLayerClosure() {
       return;
     }
 
+    // The temporary canvas is used to measure text length in the DOM.
     var canvas = document.createElement('canvas');
     if (typeof PDFJSDev === 'undefined' ||
         PDFJSDev.test('FIREFOX || MOZCENTRAL || GENERIC')) {
@@ -348,7 +332,9 @@ var renderTextLayer = (function renderTextLayerClosure() {
 
   function expandBoundsLTR(width, bounds) {
     // Sorting by x1 coordinate and walk by the bounds in the same order.
-    bounds.sort(function (a, b) { return a.x1 - b.x1 || a.index - b.index; });
+    bounds.sort(function (a, b) {
+      return a.x1 - b.x1 || a.index - b.index;
+    });
 
     // First we see on the horizon is a fake boundary.
     var fakeBoundary = {
@@ -374,7 +360,7 @@ var renderTextLayer = (function renderTextLayerClosure() {
         i++;
       }
       var j = horizon.length - 1;
-      while(j >= 0 && horizon[j].start >= boundary.y2) {
+      while (j >= 0 && horizon[j].start >= boundary.y2) {
         j--;
       }
 
@@ -637,5 +623,6 @@ var renderTextLayer = (function renderTextLayerClosure() {
   return renderTextLayer;
 })();
 
-exports.renderTextLayer = renderTextLayer;
-}));
+export {
+  renderTextLayer,
+};
