@@ -1,6 +1,11 @@
 {
-  "name": "1and1-pdfjs",
-  "version": "0.8.0.1",
+  "name": "@OnlineOffice/pdfjs",
+  "version": "0.1.0-0",
+  "config": {
+    "original": {
+      "version": "0.8.0"
+    }
+  },
   "devDependencies": {
     "escodegen": "^1.8.0",
     "esprima": "^2.7.2",
