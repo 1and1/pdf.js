@@ -82,10 +82,8 @@ function getViewerConfiguration() {
     secondaryToolbar: {
       toolbar: document.getElementById('secondaryToolbar'),
       toggleButton: document.getElementById('secondaryToolbarToggle'),
-      toolbarButtonContainer:
-        document.getElementById('secondaryToolbarButtonContainer'),
-      presentationModeButton:
-        document.getElementById('secondaryPresentationMode'),
+      toolbarButtonContainer: document.getElementById('secondaryToolbarButtonContainer'),
+      presentationModeButton: document.getElementById('secondaryPresentationMode'),
       openFileButton: document.getElementById('secondaryOpenFile'),
       printButton: document.getElementById('secondaryPrint'),
       downloadButton: document.getElementById('secondaryDownload'),
@@ -116,6 +114,8 @@ function getViewerConfiguration() {
       thumbnailView: document.getElementById('thumbnailView'),
       outlineView: document.getElementById('outlineView'),
       attachmentsView: document.getElementById('attachmentsView'),
+      // disable notification feature
+      disableNotification: true,
     },
     findBar: {
       bar: document.getElementById('findbar'),
