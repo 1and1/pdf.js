@@ -1,5 +1,16 @@
 # PDF.js
 
+## 1and1 fork-specific documentation
+
+### Versioning
+In order create a new version of PDJ.JS you have to set a new tag (GitHub release) on the commit of your choice.
+
+### Version number conflicts
+To avoid collisions between the original projects versioning and the fork versioning (tags), don't increase the major or minor version beyond 0.
+The forks versions look like v0.0.4 etc. the original PDF.JS versions start with v0.1.0.
+
+## Start of original Mozilla PDF.JS project documentation
+
 PDF.js is a Portable Document Format (PDF) viewer that is built with HTML5.
 
 PDF.js is community-driven and supported by Mozilla Labs. Our goal is to
